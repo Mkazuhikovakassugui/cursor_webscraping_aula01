@@ -1,0 +1,221 @@
+---
+title: "Aula01"
+subtitle: "Explorando as API's da página brasilapi"
+author: "Marcio Vakassugui"
+date: '2022-05-13'
+output: 
+  html_document:
+    highlight: breezedark
+    theme: lumen
+    toc: yes
+    toc_float: yes
+    smooth_scroll: no
+    collapsed: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  fig.width = 14,
+  fig.height = 7
+    )
+
+```
+
+### Pacotes necessários
+
+```{r Carregamento dos Pacotes}
+#| Echo = TRUE
+
+library(httr)
+library(jsonlite)
+library(dplyr)
+
+```
+# API SEM VALIDAÇÃO COM DOCUMENTAÇÃO
+
+### API CEP
+```{r consulta api}
+# a criação de duas variáveis facilitam a reutilização do código
+
+
+u_base <- "https://brasilapi.com.br/api"                       # parte da url que não se altera.
+
+endpoint_cep <- "/cep/v2/"          # parte que pode alterar a depender do objetivo da consulta.
+
+cep <- "82220-180"                  # parte que pode alterar a depender do objetivo da consulta.
+
+# a criação de duas variáveis facilitam a reutilização do código
+
+u_cep <- paste0(u_base, endpoint_cep, cep)                                           # u de url. 
+
+r_cep <- httr::GET(u_cep)                                                     # r de requisição.
+
+
+u_cep <- paste0(u_base, endpoint_cep, cep)              # paste une os elementos formando a url.
+
+r_cep <- httr::GET(u_cep)                    # GET do httr permite receber da API o requisitado.
+
+r_cep
+```
+
+Como visualizar o resultado obtido
+
+```{r visualização 01}
+
+content(r_cep)
+
+```
+
+Como visualizar o resultado no formato json
+
+```{r visualizar em json}
+
+content(r_cep, "text")
+
+```
+
+Observe que o valor padrão é "parsed"
+
+Veremos o jsonlite e suas vantagens
+
+```{r função jsonlite1}
+
+content(r_cep, as = "text") |> 
+    jsonlite::fromJSON(simplifyDataFrame = TRUE)
+
+```
+
+Aqui, a ideia seria a função fromJSON por meio do atributo simpifyDataFrame transformar o 
+resultado em json em uma estrura da linguagem R. Neste caso, não foi possível.
+
+### API TABELA FIPE
+
+Podemos listar as marcas de veículos referentes ao tipo de veículo na tabela do mẽs atual.
+
+Considerando o tipo de veículo como "carros".
+
+```{r tabela fipe}
+
+u_base <- "https://brasilapi.com.br/api"                       # parte da url que não se altera.
+
+endpoint_fipe <- "/fipe/marcas/v1/" # parte que pode alterar a depender do objetivo da consulta.
+
+veiculo <- "carros"                 # parte que pode alterar a depender do objetivo da consulta.
+
+
+u_fipe <- paste0(u_base, endpoint_fipe, veiculo)                                     # u de url.
+
+r_fipe <- httr::GET(u_fipe)                                                   # r de requisição.
+
+r_fipe
+
+```
+
+```{r resposta fipe}
+# como obter o resultado em formato R (lista de listas  )
+
+content(r_fipe, as = "text") |> 
+    jsonlite::fromJSON(simplifyDataFrame = TRUE)
+
+# em formato tibble
+
+content(r_fipe, as = "text") |> 
+    jsonlite::fromJSON(simplifyDataFrame = TRUE) |> 
+    tibble::tibble()
+```
+
+
+# API TABELA FIPE CONSULTA COM PARÂMETROS
+
+Inicialmente, baixamos a tabela com os códigos das tabelas mensais que servirão como parâmetros para a consulta dos preços dos carros de um determinado modelo e marca em um determinado mês.
+
+```{r consulta precos por modelo e marca (parametros em tabela)}
+
+u_base <- "https://brasilapi.com.br/api"                                        # sem alteração.
+
+endpoint_tabelas_fipe <- "/fipe/tabelas/v1"                          # endpoint para as tabelas.
+
+u_tabelas_fipe <- paste0(u_base, endpoint_tabelas_fipe) # url a partir dos elementos anteriores.
+
+r_tabelas_fipe <- httr::GET(u_tabelas_fipe)                                   # get das tabelas.
+
+content(r_tabelas_fipe, as = "text") |>                               # visualizamos as tabelas.
+    jsonlite::fromJSON(simplifyDataFrame = TRUE) |> 
+    tibble::as_tibble()
+
+
+```
+
+Agora, com o codigo da tabela, podemos realizar a consulta desejada. Por exemplo vamos encontrar os resultados para  o mes de janeiro de 2019 - código 237
+
+```{r consultas por parametro - modelo e marca e anos em janeiro 2017}
+u_fipe                                                                          # sem alteração.
+
+u_fipe_param <- paste0(u_fipe, "?tabela_referencia= ", "237")
+r_fipe_param_manual <- httr::GET(u_fipe_param)
+
+conteudo_mes_jan19a <- content(r_fipe_param_manual, as = "text") |> 
+    jsonlite::fromJSON(simplifyDataFrame = TRUE) |> 
+    tibble::as_tibble()
+
+conteudo_mes_jan19a
+
+# segunda forma (a mais usual)
+q_fipe <- list(tabela_referencia = 237)
+r_fipe_param <- GET(u_fipe, query = q_fipe)
+
+conteudo_mes_jan19b <- content(r_fipe_param, as = "text") |> 
+    jsonlite::fromJSON(simplifyDataFrame = TRUE) |> 
+    tibble::as_tibble()
+conteudo_mes_jan19b
+
+# pesquisar o preço de um carro na fipe
+
+# Esta API não disponibiliza uma lista com todos os modelos de carros
+# Pode-se obter o código de um modelo em outros sites. Ex. Jeep Compass Limited 4x2 flex 16 v
+# automático -- codigo 0170470
+
+cod_carro <-  "0170470"
+endpoint_carro_fipe <- "/fipe/preco/v1/"
+u_carro <- paste0(u_base, endpoint_carro_fipe, cod_carro)
+r_carro <- httr::GET(u_carro)
+
+content(r_carro, as = "text") |> 
+    jsonlite::fromJSON(simplifyDataFrame = TRUE) |> 
+    tibble::as_tibble() |> 
+    select(valor, anoModelo, marca)
+
+```
+
+Então, atualmente o Jeep Compass Limited 4x2 flex ano 2017 custa R$ 117.146,00.
+
+Vamos repetir a análise agora para o mês de janeiro de 2019.
+
+
+```{r consultas por parametro - modelo e marca e anos em maio 2022}
+codigo_carro <-  "0170470"
+u_base <- "https://brasilapi.com.br/api"
+endpoint_preco <- "/fipe/preco/v1/"
+q_fipe <- list(tabela_referencia = 237)
+
+u_preco_jeep_2019 <- paste0(u_base, endpoint_preco, codigo_carro)
+r_preco_jeep_2019 <- httr::GET(u_preco_jeep_2019, query = q_fipe)
+
+content(r_preco_jeep_2019, as = "text") |> 
+    jsonlite::fromJSON(simplifyDataFrame = TRUE) |> 
+    tibble::as_tibble() |> 
+    select(valor, anoModelo, marca)
+
+```
+
+Em janeiro de 2019, o mesmo carro custava R$ 111.999,00.
+
+
+# API SEM VALIDAÇÃO ESCONDIDA
+
+
+
+
