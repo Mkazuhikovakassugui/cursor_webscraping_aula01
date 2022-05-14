@@ -1643,7 +1643,7 @@ div.tocify {
 <span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>r_cep</span></code></pre></div>
 <pre><code>## Response [https://brasilapi.com.br/api/cep/v2/82220-180]
-##   Date: 2022-05-14 21:38
+##   Date: 2022-05-14 22:35
 ##   Status: 200
 ##   Content-Type: application/json; charset=utf-8
 ##   Size: 223 B</code></pre>
@@ -1734,7 +1734,7 @@ tabela do mẽs atual.</p>
 <span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>r_fipe</span></code></pre></div>
 <pre><code>## Response [https://brasilapi.com.br/api/fipe/marcas/v1/carros]
-##   Date: 2022-05-14 21:38
+##   Date: 2022-05-14 22:35
 ##   Status: 200
 ##   Content-Type: application/json; charset=utf-8
 ##   Size: 2.93 kB</code></pre>
@@ -1985,6 +1985,52 @@ Por exemplo vamos encontrar os resultados para o mes de janeiro de 2019
 </div>
 <div id="api-sem-validação-escondida" class="section level1">
 <h1>API SEM VALIDAÇÃO ESCONDIDA</h1>
+</div>
+<div id="pagina-portal-dos-mananciais---sabesp" class="section level1">
+<h1>Pagina portal dos mananciais - sabesp</h1>
+<p>obs: Ao executar o código abaixo, retornou a seguinte mensagem de
+erro: “Error in curl::curl_fetch_memory(url, handle = handle) : SSL
+certificate problem: unable to get local issuer certificate</p>
+<p>a solução foi executar a linha de comando abaixo:
+httr::set_config(httr::config(ssl_verifypeer = FALSE))</p>
+<p>Vamos criar uma função que permite baixar os dados a partir de uma
+data.</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># https://mananciais.sabesp.com.br/api/Mananciais/ResumoSistemas/2022-05-02</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>httr<span class="sc">::</span><span class="fu">set_config</span>(httr<span class="sc">::</span><span class="fu">config</span>(<span class="at">ssl_verifypeer =</span> <span class="cn">FALSE</span>))</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>baixar_dia <span class="ot">&lt;-</span> <span class="cf">function</span>(dia) {</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>    u_base <span class="ot">&lt;-</span> <span class="st">&quot;https://mananciais.sabesp.com.br/api/Mananciais/ResumoSistemas/&quot;</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>    u_dados_sabesp <span class="ot">&lt;-</span> <span class="fu">paste0</span>(u_base, dia)</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>    r_dados_sabesp <span class="ot">&lt;-</span> httr<span class="sc">::</span><span class="fu">GET</span>(u_dados_sabesp)</span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>    resultado <span class="ot">&lt;-</span> <span class="fu">content</span>(r_dados_sabesp, <span class="at">as =</span> <span class="st">&quot;text&quot;</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>    jsonlite<span class="sc">::</span><span class="fu">fromJSON</span>(<span class="at">simplifyDataFrame =</span> <span class="cn">TRUE</span>) </span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a>    da_sabesp <span class="ot">&lt;-</span> resultado <span class="sc">|&gt;</span> </span>
+<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a>        purrr<span class="sc">::</span><span class="fu">pluck</span>(<span class="st">&quot;ReturnObj&quot;</span>, <span class="st">&quot;sistemas&quot;</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a>        janitor<span class="sc">::</span><span class="fu">clean_names</span>() <span class="sc">|&gt;</span> </span>
+<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a>        tibble<span class="sc">::</span><span class="fu">as_tibble</span>()</span>
+<span id="cb28-18"><a href="#cb28-18" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb28-19"><a href="#cb28-19" aria-hidden="true" tabindex="-1"></a>    da_sabesp</span>
+<span id="cb28-20"><a href="#cb28-20" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb28-21"><a href="#cb28-21" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb28-22"><a href="#cb28-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb28-23"><a href="#cb28-23" aria-hidden="true" tabindex="-1"></a><span class="fu">baixar_dia</span>(<span class="fu">Sys.Date</span>())</span></code></pre></div>
+<pre><code>## # A tibble: 7 × 14
+##   sistema_id nome         volume_porcentagem_… volume_porcenta… volume_variacao…
+##   &lt;chr&gt;      &lt;chr&gt;        &lt;chr&gt;                           &lt;dbl&gt; &lt;chr&gt;           
+## 1 0          Cantareira   43,2                             43.2 -0,1            
+## 2 1          Alto Tietê   63,8                             63.8 -0,1            
+## 3 2          Guarapiranga 84,6                             84.6 -0,1            
+## 4 3          Cotia        88,6                             88.6 -0,2            
+## 5 4          Rio Grande   101,5                           102.  -0,2            
+## 6 5          Rio Claro    46,9                             46.9 -0,2            
+## 7 17         São Lourenço 95,3                             95.3 0,0             
+## # … with 9 more variables: volume_variacao_num &lt;dbl&gt;, volume_operacional &lt;dbl&gt;,
+## #   image_prec_dia &lt;chr&gt;, prec_dia &lt;chr&gt;, prec_mensal &lt;chr&gt;, prec_hist &lt;chr&gt;,
+## #   indicador_volume_dia &lt;int&gt;, indicador_volume &lt;int&gt;, ish &lt;dbl&gt;</code></pre>
 </div>
 
 

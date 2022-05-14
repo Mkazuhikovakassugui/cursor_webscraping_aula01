@@ -209,4 +209,25 @@ da_carro_2019 <- content(r_carr19, simplifyDataFrame = TRUE) |>
 
 
 
+# SABESP COM API ESCONDIDA ----------------------------------------------------------------
+
+# https://mananciais.sabesp.com.br/api/Mananciais/ResumoSistemas/2022-05-02
+
+u_base <- "https://mananciais.sabesp.com.br/api/Mananciais/ResumoSistemas/"
+data_sabesp <- "2022-05-09"
+
+u_dados_sabesp <- paste0(u_base, data_sabesp)
+r_dados_sabesp <- httr::GET(u_dados_sabesp)
+
+resultado <- content(r_dados_sabesp, as = "text") |> 
+    jsonlite::fromJSON(simplifyDataFrame = TRUE) 
+
+da_sabesp <- resultado |> 
+    purrr::pluck("ReturnObj", "sistemas") |> 
+    janitor::clean_names() |> 
+    tibble::as_tibble() |> 
+    View()
+
+
+
 

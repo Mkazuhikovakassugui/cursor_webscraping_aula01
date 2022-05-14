@@ -216,6 +216,44 @@ Em janeiro de 2019, o mesmo carro custava R$ 111.999,00.
 
 # API SEM VALIDAÇÃO ESCONDIDA
 
+# Pagina portal dos mananciais - sabesp
+ obs: Ao executar o código abaixo, retornou a seguinte mensagem de erro:
+"Error in curl::curl_fetch_memory(url, handle = handle) :
+SSL certificate problem: unable to get local issuer certificate
+
+a solução foi executar a linha de comando abaixo:
+httr::set_config(httr::config(ssl_verifypeer = FALSE))
+
+
+Vamos criar uma função que permite baixar os dados a partir de uma data.
+
+```{r pratica com API escondida - pagina mananciais sabesp}
+# https://mananciais.sabesp.com.br/api/Mananciais/ResumoSistemas/2022-05-02
+
+httr::set_config(httr::config(ssl_verifypeer = FALSE))
+
+baixar_dia <- function(dia) {
+    u_base <- "https://mananciais.sabesp.com.br/api/Mananciais/ResumoSistemas/"
+    
+    u_dados_sabesp <- paste0(u_base, dia)
+    r_dados_sabesp <- httr::GET(u_dados_sabesp)
+    
+    resultado <- content(r_dados_sabesp, as = "text") |> 
+    jsonlite::fromJSON(simplifyDataFrame = TRUE) 
+    
+    da_sabesp <- resultado |> 
+        purrr::pluck("ReturnObj", "sistemas") |> 
+        janitor::clean_names() |> 
+        tibble::as_tibble()
+    
+    da_sabesp
+    
+}
+
+baixar_dia(Sys.Date())
+```
+
+
 
 
 
